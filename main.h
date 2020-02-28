@@ -38,7 +38,7 @@
 #define STATUS_STATE               1
 #define STATUS_LNA_GAIN            2
 #define STATUS_PUNCTURE_RATE       3
-#define STATUS_POWER_I             4 
+#define STATUS_POWER_I             4
 #define STATUS_POWER_Q             5
 #define STATUS_CARRIER_FREQUENCY   6
 #define STATUS_CONSTELLATION_I     7
@@ -82,6 +82,8 @@ typedef struct {
     char status_ip_addr[16];
     int status_ip_port;
 
+    uint8_t device_BB_Gain;
+
     bool new;
     pthread_mutex_t mutex;
 } longmynd_config_t;
@@ -123,4 +125,3 @@ typedef struct {
 } thread_vars_t;
 
 #endif
-
