@@ -120,6 +120,7 @@ uint8_t process_command_line(int argc, char *argv[], longmynd_config_t *config) 
     strcpy(config->ts_fifo_path, "longmynd_main_ts");
     config->status_use_ip = false;
     strcpy(config->status_fifo_path, "longmynd_main_status");
+    config->device_BB_Gain = 0;
 
     param=1;
     while (param<argc-2) {
@@ -158,9 +159,18 @@ uint8_t process_command_line(int argc, char *argv[], longmynd_config_t *config) 
                 config->beep_enabled=true;
                 param--; /* there is no data for this so go back */
                 break;
+            case 'g':
+                config->device_BB_Gain=(uint8_t)strtol(argv[param],NULL,10);
+                break;
           }
         }
         param++;
+    }
+
+    if (err==ERROR_NONE) {
+        if (config->device_BB_Gain>8) {
+            config->device_BB_Gain=8;
+        }
     }
 
     if ((argc-param)<2) {
@@ -257,7 +267,7 @@ uint8_t do_report(longmynd_status_t *status) {
             stv0910_read_constellation(STV0910_DEMOD_TOP, &status->constellation[count][0], &status->constellation[count][1]);
         }
     }
-    
+
     /* puncture rate */
     if (err==ERROR_NONE) err=stv0910_read_puncture_rate(STV0910_DEMOD_TOP, &status->puncture_rate);
 
@@ -334,7 +344,7 @@ void *loop_i2c(void *arg) {
             /* we are only using the one demodulator so set the other to 0 to turn it off */
             if (*err==ERROR_NONE) *err=stv0910_init(config_cpy.sr_requested,0);
             /* we only use one of the tuners in STV6120 so freq for tuner 2=0 to turn it off */
-            if (*err==ERROR_NONE) *err=stv6120_init(config_cpy.freq_requested,0,config_cpy.port_swap);
+            if (*err==ERROR_NONE) *err=stv6120_init(config_cpy.freq_requested,0,config_cpy.port_swap,config_cpy.device_BB_Gain);
             /* we turn on the LNA we want and turn the other off (if they exist) */
             if (*err==ERROR_NONE) *err=stvvglna_init(NIM_INPUT_TOP,    (config_cpy.port_swap) ? STVVGLNA_OFF : STVVGLNA_ON,  &status_cpy.lna_ok);
             if (*err==ERROR_NONE) *err=stvvglna_init(NIM_INPUT_BOTTOM, (config_cpy.port_swap) ? STVVGLNA_ON  : STVVGLNA_OFF, &status_cpy.lna_ok);
