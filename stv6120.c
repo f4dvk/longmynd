@@ -279,7 +279,7 @@ uint8_t stv6120_init(uint32_t freq_tuner_1, uint32_t freq_tuner_2, bool swap, ui
                              (STV6120_CTRL2_SDOFF_OFF        << STV6120_CTRL2_SDOFF_SHIFT)     |
                              (STV6120_CTRL2_SYN_ON           << STV6120_CTRL2_SYN_SHIFT)       |
                              (STV6120_CTRL2_REFOUTSEL_1_25V  << STV6120_CTRL2_REFOUTSEL_SHIFT) |
-                             (gain_bb       << STV6120_CTRL2_BBGAIN_SHIFT)    );
+                             (gain_bb                        << STV6120_CTRL2_BBGAIN_SHIFT)    );
 
         /* CTRL3,4,5,6 are all tuner 1 PLL regs we will set them later */
 
@@ -297,7 +297,7 @@ uint8_t stv6120_init(uint32_t freq_tuner_1, uint32_t freq_tuner_2, bool swap, ui
                              (STV6120_CTRL2_SDOFF_ON          << STV6120_CTRL2_SDOFF_SHIFT)     |
                              (STV6120_CTRL2_SYN_OFF           << STV6120_CTRL2_SYN_SHIFT)       |
                              (STV6120_CTRL2_REFOUTSEL_1_25V   << STV6120_CTRL2_REFOUTSEL_SHIFT) |
-                             (gain_bb        << STV6120_CTRL2_BBGAIN_SHIFT)    );
+                             (gain_bb                         << STV6120_CTRL2_BBGAIN_SHIFT)    );
 
         /* CTRL3,4,5,6 are all tuner 1 PLL regs we will set them later */
 
@@ -355,7 +355,7 @@ uint8_t stv6120_init(uint32_t freq_tuner_1, uint32_t freq_tuner_2, bool swap, ui
                              (STV6120_CTRL2_SDOFF_OFF        << STV6120_CTRL2_SDOFF_SHIFT)     |
                              (STV6120_CTRL2_SYN_ON           << STV6120_CTRL2_SYN_SHIFT)       |
                              (STV6120_CTRL2_REFOUTSEL_1_25V  << STV6120_CTRL2_REFOUTSEL_SHIFT) |
-                             (gain_bb       << STV6120_CTRL2_BBGAIN_SHIFT)    );
+                             (gain_bb                        << STV6120_CTRL2_BBGAIN_SHIFT)    );
 
         /* CTRL12, 13, 14, 15 are PLL for tuner 2 */
 
@@ -372,7 +372,7 @@ uint8_t stv6120_init(uint32_t freq_tuner_1, uint32_t freq_tuner_2, bool swap, ui
                              (STV6120_CTRL2_SDOFF_ON          << STV6120_CTRL2_SDOFF_SHIFT)     |
                              (STV6120_CTRL2_SYN_OFF           << STV6120_CTRL2_SYN_SHIFT)       |
                              (STV6120_CTRL2_REFOUTSEL_1_25V   << STV6120_CTRL2_REFOUTSEL_SHIFT) |
-                             (gain_bb        << STV6120_CTRL2_BBGAIN_SHIFT)    );
+                             (gain_bb                         << STV6120_CTRL2_BBGAIN_SHIFT)    );
 
         /* CTRL12, 13, 14, 15 are PLL for tuner 2 */
 
