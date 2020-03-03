@@ -121,6 +121,7 @@ uint8_t process_command_line(int argc, char *argv[], longmynd_config_t *config) 
     config->status_use_ip = false;
     strcpy(config->status_fifo_path, "longmynd_main_status");
     config->device_BB_Gain = 0;
+    config->device_Scan_Limit = 50;
 
     param=1;
     while (param<argc-2) {
@@ -162,6 +163,9 @@ uint8_t process_command_line(int argc, char *argv[], longmynd_config_t *config) 
             case 'g':
                 config->device_BB_Gain=(uint8_t)strtol(argv[param],NULL,10);
                 break;
+            case 'S':
+                config->device_Scan_Limit=(uint32_t)strtol(argv[param],NULL,10);
+                break;
           }
         }
         param++;
@@ -171,6 +175,17 @@ uint8_t process_command_line(int argc, char *argv[], longmynd_config_t *config) 
         if (config->device_BB_Gain>8) {
             config->device_BB_Gain=8;
         }
+    }
+
+    if (err==ERROR_NONE) {
+        if (config->device_Scan_Limit>4000) {
+            config->device_Scan_Limit=4000;
+        }
+        if ( config->device_Scan_Limit%2 != 0){
+           config->device_Scan_Limit=config->device_Scan_Limit+1;
+           printf("Correction Scan Limit, pair uniquement, valeur: %i\n",config->device_Scan_Limit);
+        }
+        config->device_Scan_Limit=config->device_Scan_Limit/2;
     }
 
     if ((argc-param)<2) {
@@ -342,7 +357,7 @@ void *loop_i2c(void *arg) {
             /* init all the modules */
             if (*err==ERROR_NONE) *err=nim_init();
             /* we are only using the one demodulator so set the other to 0 to turn it off */
-            if (*err==ERROR_NONE) *err=stv0910_init(config_cpy.sr_requested,0);
+            if (*err==ERROR_NONE) *err=stv0910_init(config_cpy.sr_requested,0,config_cpy.device_Scan_Limit);
             /* we only use one of the tuners in STV6120 so freq for tuner 2=0 to turn it off */
             if (*err==ERROR_NONE) *err=stv6120_init(config_cpy.freq_requested,0,config_cpy.port_swap,config_cpy.device_BB_Gain);
             /* we turn on the LNA we want and turn the other off (if they exist) */

@@ -83,6 +83,7 @@ typedef struct {
     int status_ip_port;
 
     uint8_t device_BB_Gain;
+    uint32_t device_Scan_Limit;
 
     bool new;
     pthread_mutex_t mutex;

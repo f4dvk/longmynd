@@ -29,9 +29,9 @@
 #define DEMOD_S2 2
 #define DEMOD_S 3
 
-#define STV0910_PLL_LOCK_TIMEOUT 100 
+#define STV0910_PLL_LOCK_TIMEOUT 100
 
-#define STV0910_SCAN_BLIND_BEST_GUESS 0x15
+#define STV0910_SCAN_BLIND_BEST_GUESS 0x15 //0x1F
 
 #define STV0910_DEMOD_TOP 1
 #define STV0910_DEMOD_BOTTOM 2
@@ -52,14 +52,13 @@ uint8_t stv0910_read_err_rate(uint8_t, uint32_t*);
 uint8_t stv0910_read_ber(uint8_t, uint32_t*);
 uint8_t stv0910_read_dvbs2_mer(uint8_t, uint32_t*);
 uint8_t stv0910_read_modcod_and_type(uint8_t, uint32_t*, bool*, bool*);
-uint8_t stv0910_init(uint32_t, uint32_t);
+uint8_t stv0910_init(uint32_t, uint32_t, uint32_t);
 uint8_t stv0910_init_regs(void);
 uint8_t stv0910_setup_timing_loop(uint8_t, uint32_t);
-uint8_t stv0910_setup_carrier_loop(uint8_t); 
+uint8_t stv0910_setup_carrier_loop(uint8_t, uint32_t);
 uint8_t stv0910_read_scan_state(uint8_t, uint8_t *);
 uint8_t stv0910_start_scan(uint8_t);
 uint8_t stv0910_setup_search_params(uint8_t);
 uint8_t stv0910_setup_clocks();
 
 #endif
-

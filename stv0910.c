@@ -353,7 +353,7 @@ uint8_t stv0910_setup_equalisers(uint8_t demod) {
 
 
 /* -------------------------------------------------------------------------------------------------- */
-uint8_t stv0910_setup_carrier_loop(uint8_t demod) {
+uint8_t stv0910_setup_carrier_loop(uint8_t demod, uint32_t freq) {
 /* -------------------------------------------------------------------------------------------------- */
 /* 3 stages:                                                                                          */
 /*   course:                                                                                          */
@@ -378,11 +378,15 @@ uint8_t stv0910_setup_carrier_loop(uint8_t demod) {
 
     printf("Flow: Setup carrier loop %i\n", demod);
 
-    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRUP0 : RSTV0910_P1_CFRUP0), (uint8_t)(25 & 0xFF));
-    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRUP1 : RSTV0910_P1_CFRUP1), (uint8_t)(25 >> 8));
+    //stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CARFREQ : RSTV0910_P1_CARFREQ), 0x79);
 
-    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRLOW0 : RSTV0910_P1_CFRLOW0), (uint8_t)(-25 & 0xFF));
-    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRLOW1 : RSTV0910_P1_CFRLOW1), (uint8_t)(-25 >> 8));
+    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRUP0 : RSTV0910_P1_CFRUP0), (freq & 0xFF));
+    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRUP1 : RSTV0910_P1_CFRUP1), (freq >> 8) & 0xFF);
+
+    freq = -freq;
+
+    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRLOW0 : RSTV0910_P1_CFRLOW0), (freq & 0xFF));
+    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRLOW1 : RSTV0910_P1_CFRLOW1), (freq >> 8) & 0xFF);
 
     /* start at 0 offset */
                          err=stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRINIT0 : RSTV0910_P1_CFRINIT0), 0);
@@ -557,7 +561,7 @@ uint8_t stv0910_init_regs() {
 }
 
 /* -------------------------------------------------------------------------------------------------- */
-uint8_t stv0910_init(uint32_t sr1, uint32_t sr2) {
+uint8_t stv0910_init(uint32_t sr1, uint32_t sr2, uint32_t freq) {
 /* -------------------------------------------------------------------------------------------------- */
 /* demodulator search sequence is:                                                                    */
 /*   setup the carrier loop                                                                           */
@@ -588,13 +592,13 @@ uint8_t stv0910_init(uint32_t sr1, uint32_t sr2) {
     /* now we do the inits for each specific demodulator */
     if (sr1!=0) {
         if (err==ERROR_NONE) err=stv0910_setup_equalisers(STV0910_DEMOD_TOP);
-        if (err==ERROR_NONE) err=stv0910_setup_carrier_loop(STV0910_DEMOD_TOP);
+        if (err==ERROR_NONE) err=stv0910_setup_carrier_loop(STV0910_DEMOD_TOP, freq);
         if (err==ERROR_NONE) err=stv0910_setup_timing_loop(STV0910_DEMOD_TOP, sr1);
     }
 
     if (sr2!=0) {
         if (err==ERROR_NONE) err=stv0910_setup_equalisers(STV0910_DEMOD_BOTTOM);
-        if (err==ERROR_NONE) err=stv0910_setup_carrier_loop(STV0910_DEMOD_BOTTOM);
+        if (err==ERROR_NONE) err=stv0910_setup_carrier_loop(STV0910_DEMOD_BOTTOM, freq);
         if (err==ERROR_NONE) err=stv0910_setup_timing_loop(STV0910_DEMOD_BOTTOM, sr2);
     }
 
