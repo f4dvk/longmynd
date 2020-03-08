@@ -418,6 +418,7 @@ void *loop_i2c(void *arg) {
                 /* process state changes */
                 *err=stv0910_read_scan_state(STV0910_DEMOD_TOP, &status_cpy.demod_state);
                 if (status_cpy.demod_state==DEMOD_HUNTING) {
+                    *err=stv0910_start_scan(STV0910_DEMOD_TOP);
                     status_cpy.state=STATE_DEMOD_HUNTING;
                 }
                 else if (status_cpy.demod_state==DEMOD_FOUND_HEADER)  {
@@ -437,6 +438,7 @@ void *loop_i2c(void *arg) {
                 /* process state changes */
                 *err=stv0910_read_scan_state(STV0910_DEMOD_TOP, &status_cpy.demod_state);
                 if (status_cpy.demod_state==DEMOD_HUNTING) {
+                    *err=stv0910_start_scan(STV0910_DEMOD_TOP);
                     status_cpy.state=STATE_DEMOD_HUNTING;
                 }
                 else if (status_cpy.demod_state==DEMOD_FOUND_HEADER)  {
