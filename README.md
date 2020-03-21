@@ -4,6 +4,36 @@ An Open Source Linux ATV Receiver.
 
 Copyright 2019 Heather Lomond
 
+## Fonction full_rx pour démarrage du RX au lancement d'un jetson nano:
+
+Avant installation, taper la commande suivante pour enlever le mot de passe lors d'un sudo:
+
+```
+echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/dont-prompt-$USER-for-password
+```
+
+Installation:
+
+```
+wget https://raw.githubusercontent.com/f4dvk/longmynd/master/install.sh
+chmod +x install.sh
+./install.sh
+```
+
+Configuration:
+
+```
+nano /home/$USER/longmynd/config.txt
+```
+
+Lancement automatique au démarrage, dans Applications au démarrage, ajouter:
+
+Ligne "Commande":
+
+```
+sh -c "gnome-terminal --window --full-screen -- /home/$USER/longmynd/full_rx &"
+```
+
 ## Dependencies
 
     sudo apt-get install libusb-1.0-0-dev libasound2-dev
@@ -39,29 +69,29 @@ The test harness `fake_read` or a similar process must be running to consume the
 ./fake_read &
 ```
 
-A video player (e.g. VLC) must be running to consume the output of the TS FIFO. 
+A video player (e.g. VLC) must be running to consume the output of the TS FIFO.
 
 ## Output
 
     The status fifo is filled with status information as and when it becomes available.
     The format of the status information is:
-    
+
          $n,m<cr>
-     
+
     Where:
          n = identifier integer of Status message
          m = integer value associated with this status message
-      
+
     And the values of n and m are defined as:
-    
+
     ID  Meaning             Value and Units
     ==============================================================================================
     1   State               0: initialising
                             1: searching
                             2: found headers
                             3: locked on a DVB-S signal
-                            4: locked on a DVB-S2 signal 
-    2   LNA Gain            On devices that have LNA Amplifiers this represents the two gain 
+                            4: locked on a DVB-S2 signal
+    2   LNA Gain            On devices that have LNA Amplifiers this represents the two gain
                             sent as N, where n = (lna_gain<<5) | lna_vgo
                             Though not actually linear, n can be usefully treated as a single
                             byte representing the gain of the amplifier

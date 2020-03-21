@@ -9,7 +9,7 @@ COPT = -O3 -march=native -mtune=native
 CFLAGS += -Wall -Wextra -Wpedantic -Wunused -DVERSION=\"${VER}\" -pthread -D_GNU_SOURCE
 LDFLAGS += -lusb-1.0 -lm -lasound
 
-all: ${BIN} fake_read infos
+all: ${BIN} fake_read infos full_rx
 
 debug: COPT = -Og
 debug: CFLAGS += -ggdb -fno-omit-frame-pointer
@@ -26,6 +26,10 @@ infos:
 	@echo "  CC     "$@
 	@${CC} infos.c -o $@
 
+full_rx:
+	@echo "  CC     "$@
+	@${CC} full_rx.c -o $@
+
 $(BIN): ${OBJ}
 	@echo "  LD     "$@
 	@${CC} ${COPT} ${CFLAGS} -o $@ ${OBJ} ${LDFLAGS}
@@ -35,7 +39,7 @@ $(BIN): ${OBJ}
 	@${CC} ${COPT} ${CFLAGS} -c -fPIC -o $@ $<
 
 clean:
-	@rm -rf ${BIN} fake_read infos ${OBJ}
+	@rm -rf ${BIN} fake_read infos full_rx ${OBJ}
 
 tags:
 	@ctags *

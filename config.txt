@@ -1,0 +1,5 @@
+freq=437000
+symbolrate=250
+input=a
+gain=10
+scan=20
