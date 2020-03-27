@@ -105,8 +105,8 @@ int main() {
     }
 
     /* Open status FIFO for read only  */
-    systen("sudo rm /home/$USER/longmynd/longmynd_main_status >/dev/null 2>/dev/null");
-    systen("sudo rm /home/$USER/longmynd/longmynd_main_ts >/dev/null 2>/dev/null");
+    system("sudo rm /home/$USER/longmynd/longmynd_main_status >/dev/null 2>/dev/null");
+    system("sudo rm /home/$USER/longmynd/longmynd_main_ts >/dev/null 2>/dev/null");
     ret=mkfifo("longmynd_main_status", 0666);
     ret=mkfifo("longmynd_main_ts", 0666);
 
