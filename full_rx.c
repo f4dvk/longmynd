@@ -7,6 +7,18 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <time.h>
+
+char Freq[255];
+char Sr[255];
+char Gain[255];
+char Scan[255];
+char In[255];
+char TXT[255];
+
+unsigned long delai_TXT=2;
+time_t top2;                        // variabe de calcul temps TX
+time_t Time;                       // variabe de calcul temps TX
 
 void GetConfigParam(char *PathConfigFile, char *Param, char *Value)
 {
@@ -86,7 +98,7 @@ int main() {
     float MER;
     int LCK=0;
     char Command[511];
-    unsigned long time;
+    unsigned long temps;
     unsigned long top;
 
     GetConfigParam(PATH_PCONFIG,"freq", Freq);
@@ -94,6 +106,7 @@ int main() {
     GetConfigParam(PATH_PCONFIG,"input", In);
     GetConfigParam(PATH_PCONFIG,"gain", Gain);
     GetConfigParam(PATH_PCONFIG,"scan", Scan);
+    GetConfigParam(PATH_PCONFIG,"texte", TXT);
 
     if(strcmp(In, "a") == 0)
     {
@@ -110,10 +123,10 @@ int main() {
     ret=mkfifo("longmynd_main_status", 0666);
     ret=mkfifo("longmynd_main_ts", 0666);
 
-    snprintf(Command, 511, "sudo /home/$USER/longmynd/longmynd -i 232.0.0.1 10005 %s -g %s -S %s %s %s >/dev/null 2>/dev/null &", In, Gain, Scan, Freq, Sr);
+    snprintf(Command, 511, "sudo /home/$USER/longmynd/longmynd -i 230.0.0.3 1243 %s -g %s -S %s %s %s >/dev/null 2>/dev/null &", In, Gain, Scan, Freq, Sr);
     system(Command);
 
-    snprintf(Command, 511, "mpv --fs --no-cache --no-terminal udp://232.0.0.1:10005 &");
+    snprintf(Command, 511, "mpv --fs --no-cache --no-terminal udp://230.0.0.3:1243 &");
 
     fd_status_fifo = open("longmynd_main_status", O_RDONLY);
     if (fd_status_fifo<0) printf("Failed to open status fifo\n");
@@ -123,12 +136,12 @@ int main() {
     system(Command);
 
     while (1) {
-      time = millis();
+      temps ++;
+      Time=time(NULL);
       num=read(fd_status_fifo, status_message_char, 1);
       if (num >= 0 )
       {
         status_message_char[num]='\0';
-        //if (num>0) printf("%s",status_message_char);
 
         if (strcmp(status_message_char, "$") == 0)
         {
@@ -146,14 +159,14 @@ int main() {
               strcpy(STATEtext, "Searching");
               if (LCK == 1)
               {
-                top = time;
+                top=temps;
                 LCK=2;
               }
-              if (((time - top) > 15000) && (LCK == 2))
+              if (((temps - top) > 15000) && (LCK == 2))
               {
                 system("sudo killall mpv >/dev/null 2>/dev/null");
                 usleep(300);
-                system("mpv --fs --no-cache --no-terminal udp://232.0.0.1:10005 &");
+                system("mpv --fs --no-cache --no-terminal udp://232.0.0.3:1243 &");
                 LCK=0;
               }
               break;
@@ -193,12 +206,16 @@ int main() {
           if ((stat_string[0] == '1') && (stat_string[1] == '3'))  // Service Provider
           {
             strcpy(ServiceProvidertext, stat_string);
+            int length=strlen(ServiceProvidertext);
+            if (ServiceProvidertext[length-1] == '\n') ServiceProvidertext[length-1] = '\0';
             chopN(ServiceProvidertext, 3);
           }
 
           if ((stat_string[0] == '1') && (stat_string[1] == '4'))  // Service
           {
             strcpy(Servicetext, stat_string);
+            int length=strlen(Servicetext);
+            if (Servicetext[length-1] == '\n') Servicetext[length-1] = '\0';
             chopN(Servicetext, 3);
           }
 
@@ -435,6 +452,14 @@ int main() {
             snprintf(MERtext, 24, "MER %.1f (%.1f needed)", MER, MERThreshold);
 
             printf("%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n\n##################\n", STATEtext, FREQtext, SRtext, Modulationtext, FECtext, ServiceProvidertext, Servicetext, Encodingtext, MERtext);
+
+            if ((((unsigned long)difftime(Time, top2)) > delai_TXT) && (strcmp(TXT, "1") == 0))
+            {
+              snprintf(Command, 511, "echo '%s  Freq: %s  SR: %s  %s  %s  Provider: %s  Call: %s  %s  %s' > /home/%s/longmynd/infos.txt", STATEtext, FREQtext, SRtext, Modulationtext, FECtext, ServiceProvidertext, Servicetext, Encodingtext, MERtext, user);
+              system(Command);
+              top2=Time;
+            }
+
           }
           stat_string[0] = '\0';
         }
