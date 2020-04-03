@@ -166,7 +166,7 @@ int main() {
               {
                 system("sudo killall mpv >/dev/null 2>/dev/null");
                 usleep(300);
-                system("mpv --fs --no-cache --no-terminal udp://232.0.0.3:1243 &");
+                system("mpv --fs --no-cache --no-terminal udp://230.0.0.3:1243 &");
                 LCK=0;
               }
               break;
@@ -455,7 +455,9 @@ int main() {
 
             if ((((unsigned long)difftime(Time, top2)) > delai_TXT) && (strcmp(TXT, "1") == 0))
             {
-              snprintf(Command, 511, "echo '%s  Freq: %s  SR: %s  %s  %s  Provider: %s  Call: %s  %s  %s' > /home/%s/longmynd/infos.txt", STATEtext, FREQtext, SRtext, Modulationtext, FECtext, ServiceProvidertext, Servicetext, Encodingtext, MERtext, user);
+              snprintf(Command, 530, "echo '%s  Freq: %s  SR: %s  %s  %s  Provider: %s  Call: %s  %s  %s' > /home/%s/longmynd/infos.txt.tmp", STATEtext, FREQtext, SRtext, Modulationtext, FECtext, ServiceProvidertext, Servicetext, Encodingtext, MERtext, user);
+              system(Command);
+              snprintf(Command, 530, "mv /home/%s/longmynd/infos.txt.tmp /home/%s/longmynd/infos.txt", user, user);
               system(Command);
               top2=Time;
             }
