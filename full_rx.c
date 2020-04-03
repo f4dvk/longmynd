@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include <time.h>
 
 char Freq[255];
@@ -67,7 +68,7 @@ int main() {
     const char* user = getenv("USER");
     char path[511];
 
-    snprint(path, 511, "/home/%s/longmynd/config.txt", user);
+    snprintf(path, 511, "/home/%s/longmynd/config.txt", user);
     #define PATH_PCONFIG path
 
     int num;
