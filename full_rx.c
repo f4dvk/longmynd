@@ -11,11 +11,13 @@
 #include <time.h>
 
 char Freq[255];
-char Sr[255];
-char Gain[255];
-char Scan[255];
-char In[255];
-char TXT[255];
+char Sr[5];
+char Gain[3];
+char Scan[5];
+char In[3];
+char TXT[2];
+char IP[10];
+char Port[5];
 
 unsigned long delai_TXT=2;
 time_t top2;                        // variabe de calcul temps TX
@@ -82,8 +84,8 @@ int main() {
     char STATEtext[63];
     char FREQtext[63];
     char SRtext[63];
-    char ServiceProvidertext[255] = " ";
-    char Servicetext[255] = " ";
+    char ServiceProvidertext[63] = " ";
+    char Servicetext[63] = " ";
     char MODCODtext[63];
     char FECtext[63] = " ";
     char Modulationtext[63] = " ";
@@ -98,7 +100,7 @@ int main() {
     int SR;
     float MER;
     int LCK=0;
-    char Command[511];
+    char Command[530];
     unsigned long temps;
     unsigned long top;
 
@@ -108,6 +110,8 @@ int main() {
     GetConfigParam(PATH_PCONFIG,"gain", Gain);
     GetConfigParam(PATH_PCONFIG,"scan", Scan);
     GetConfigParam(PATH_PCONFIG,"texte", TXT);
+    GetConfigParam(PATH_PCONFIG,"ip", IP);
+    GetConfigParam(PATH_PCONFIG,"port", Port);
 
     if(strcmp(In, "a") == 0)
     {
@@ -124,10 +128,10 @@ int main() {
     ret=mkfifo("longmynd_main_status", 0666);
     ret=mkfifo("longmynd_main_ts", 0666);
 
-    snprintf(Command, 511, "sudo /home/$USER/longmynd/longmynd -i 230.0.0.3 1243 %s -g %s -S %s %s %s >/dev/null 2>/dev/null &", In, Gain, Scan, Freq, Sr);
+    snprintf(Command, 530, "sudo /home/$USER/longmynd/longmynd -i %s %s %s -g %s -S %s %s %s >/dev/null 2>/dev/null &", IP, Port, In, Gain, Scan, Freq, Sr);
     system(Command);
 
-    snprintf(Command, 511, "mpv --fs --no-cache --no-terminal udp://230.0.0.3:1243 &");
+    snprintf(Command, 530, "mpv --fs --no-cache --no-terminal udp://%s:%s &", IP, Port);
 
     fd_status_fifo = open("longmynd_main_status", O_RDONLY);
     if (fd_status_fifo<0) printf("Failed to open status fifo\n");
@@ -167,7 +171,8 @@ int main() {
               {
                 system("sudo killall mpv >/dev/null 2>/dev/null");
                 usleep(300);
-                system("mpv --fs --no-cache --no-terminal udp://230.0.0.3:1243 &");
+                snprintf(Command, 530, "mpv --fs --no-cache --no-terminal udp://%s:%s &", IP, Port);
+                system(Command);
                 LCK=0;
               }
               break;
@@ -456,7 +461,7 @@ int main() {
 
             if ((((unsigned long)difftime(Time, top2)) > delai_TXT) && (strcmp(TXT, "1") == 0))
             {
-              snprintf(Command, 530, "echo '%s  Freq: %s  SR: %s  %s  %s  Provider: %s  Call: %s  %s  %s' > /home/%s/longmynd/infos.txt.tmp", STATEtext, FREQtext, SRtext, Modulationtext, FECtext, ServiceProvidertext, Servicetext, Encodingtext, MERtext, user);
+              snprintf(Command, 640, "echo '%s  Freq: %s  SR: %s  %s  %s  Provider: %s  Call: %s  %s  %s' > /home/%s/longmynd/infos.txt.tmp", STATEtext, FREQtext, SRtext, Modulationtext, FECtext, ServiceProvidertext, Servicetext, Encodingtext, MERtext, user);
               system(Command);
               snprintf(Command, 530, "mv /home/%s/longmynd/infos.txt.tmp /home/%s/longmynd/infos.txt", user, user);
               system(Command);
