@@ -26,13 +26,13 @@ Configuration:
 nano /home/$USER/longmynd/config.txt
 ```
 
-Lancement automatique au démarrage, dans Applications au démarrage, ajouter:
+Création automatique lors de l'installation (maj 21/04/2020):
 
-Ligne "Commande":
+~~Lancement automatique au démarrage, dans Applications au démarrage, ajouter:~~
 
-```
-sh -c "gnome-terminal --window --full-screen -- /home/$USER/longmynd/full_rx &"
-```
+~~Ligne "Commande":~~
+
+~~sh -c "gnome-terminal --window --full-screen -- /home/$USER/longmynd/full_rx &"~~
 
 ## Dependencies
 
