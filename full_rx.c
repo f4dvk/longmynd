@@ -19,9 +19,13 @@ char TXT[2];
 char IP[10];
 char Port[5];
 
-unsigned long delai_TXT=2;
-time_t top2;                        // variabe de calcul temps TX
-time_t Time;                       // variabe de calcul temps TX
+unsigned long delai_TXT=2;          // delai entre deux écritures en secondes
+unsigned long delai_reset=5;          // delai entre perte rx et reset en secondes
+unsigned long delai_term=0.5;          // delai rafraichissement infos du terminal en secondes
+time_t top;                        // variable de calcul temps reset mpv
+time_t top2;                        // variable de calcul temps ecriture infos.txt
+time_t top3;                        // variable de calcul temps affichage infos dans le terminal
+time_t Time;                       // variable de calcul temps
 
 void GetConfigParam(char *PathConfigFile, char *Param, char *Value)
 {
@@ -101,8 +105,6 @@ int main() {
     float MER;
     int LCK=0;
     char Command[530];
-    unsigned long temps;
-    unsigned long top;
 
     GetConfigParam(PATH_PCONFIG,"freq", Freq);
     GetConfigParam(PATH_PCONFIG,"symbolrate", Sr);
@@ -141,7 +143,6 @@ int main() {
     system(Command);
 
     while (1) {
-      temps ++;
       Time=time(NULL);
       num=read(fd_status_fifo, status_message_char, 1);
       if (num >= 0 )
@@ -164,10 +165,10 @@ int main() {
               strcpy(STATEtext, "Searching");
               if (LCK == 1)
               {
-                top=temps;
+                top=time(NULL);
                 LCK=2;
               }
-              if (((temps - top) > 15000) && (LCK == 2))
+              if ((((unsigned long)difftime(Time, top)) > delai_reset) && (LCK == 2))
               {
                 system("sudo killall mpv >/dev/null 2>/dev/null");
                 usleep(300);
@@ -457,7 +458,12 @@ int main() {
             }
             snprintf(MERtext, 24, "MER %.1f (%.1f needed)", MER, MERThreshold);
 
-            printf("%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n\n##################\n", STATEtext, FREQtext, SRtext, Modulationtext, FECtext, ServiceProvidertext, Servicetext, Encodingtext, MERtext);
+            if (((unsigned long)difftime(Time, top3)) > delai_term)
+            {
+              top3=time(NULL);
+              system("clear && printf '\e[3J'");
+              printf("##################\n\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n\n##################\n", STATEtext, FREQtext, SRtext, Modulationtext, FECtext, ServiceProvidertext, Servicetext, Encodingtext, MERtext);
+            }
 
             if ((((unsigned long)difftime(Time, top2)) > delai_TXT) && (strcmp(TXT, "1") == 0))
             {
