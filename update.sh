@@ -23,6 +23,10 @@ rm master.zip
 cd longmynd
 make
 
+cd /home/$USER
+
+dconf write /org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/use-theme-transparency false
+
 # Restauration du fichier config
 cp -f -r "$PATHUBACKUP"/config.txt "$PATHSCRIPT"/config.txt
 
