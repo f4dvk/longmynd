@@ -18,6 +18,8 @@ char In[3];
 char TXT[2];
 char IP[10];
 char Port[5];
+char Player[2];
+char Quiet[2];
 
 unsigned long delai_TXT=2;          // delai entre deux écritures en secondes
 unsigned long delai_reset=5;          // delai entre perte rx et reset en secondes
@@ -114,6 +116,8 @@ int main() {
     GetConfigParam(PATH_PCONFIG,"texte", TXT);
     GetConfigParam(PATH_PCONFIG,"ip", IP);
     GetConfigParam(PATH_PCONFIG,"port", Port);
+    GetConfigParam(PATH_PCONFIG,"player", Player);
+    GetConfigParam(PATH_PCONFIG,"quiet", Quiet);
 
     if(strcmp(In, "a") == 0)
     {
@@ -133,14 +137,18 @@ int main() {
     snprintf(Command, 530, "sudo /home/$USER/longmynd/longmynd -i %s %s %s -g %s -S %s %s %s >/dev/null 2>/dev/null &", IP, Port, In, Gain, Scan, Freq, Sr);
     system(Command);
 
-    snprintf(Command, 530, "mpv --fs --no-cache --no-terminal udp://%s:%s &", IP, Port);
-
     fd_status_fifo = open("longmynd_main_status", O_RDONLY);
     if (fd_status_fifo<0) printf("Failed to open status fifo\n");
 
     printf("Listening\n");
 
     system(Command);
+
+    if (strcmp(Player, "1") == 0)
+    {
+      snprintf(Command, 530, "mpv --fs --no-cache --no-terminal udp://%s:%s &", IP, Port);
+      system(Command);
+    }
 
     while (1) {
       Time=time(NULL);
@@ -168,7 +176,7 @@ int main() {
                 top=time(NULL);
                 LCK=2;
               }
-              if ((((unsigned long)difftime(Time, top)) > delai_reset) && (LCK == 2))
+              if ((((unsigned long)difftime(Time, top)) > delai_reset) && (LCK == 2) && (strcmp(Player, "1") == 0))
               {
                 system("sudo killall mpv >/dev/null 2>/dev/null");
                 usleep(300);
@@ -238,27 +246,27 @@ int main() {
               {
                 case 0:
                   strcpy(FECtext, "FEC 1/2");
-                  MERThreshold = 0; //
+                  MERThreshold = 1.7; //
                 break;
                 case 1:
                   strcpy(FECtext, "FEC 2/3");
-                  MERThreshold = 0; //
+                  MERThreshold = 3.3; //
                 break;
                 case 2:
                   strcpy(FECtext, "FEC 3/4");
-                  MERThreshold = 0; //
+                  MERThreshold = 4.2; //
                 break;
                 case 3:
                   strcpy(FECtext, "FEC 5/6");
-                  MERThreshold = 0; //
+                  MERThreshold = 5.1; //
                 break;
                 case 4:
                   strcpy(FECtext, "FEC 6/7");
-                  MERThreshold = 0; //
+                  MERThreshold = 5.5; //
                 break;
                 case 5:
                   strcpy(FECtext, "FEC 7/8");
-                  MERThreshold = 0; //
+                  MERThreshold = 5.8; //
                 break;
                 default:
                   strcpy(FECtext, "FEC - ");
@@ -458,7 +466,7 @@ int main() {
             }
             snprintf(MERtext, 24, "MER %.1f (%.1f needed)", MER, MERThreshold);
 
-            if (((unsigned long)difftime(Time, top3)) > delai_term)
+            if ((strcmp(Quiet, "0") == 0) && (((unsigned long)difftime(Time, top3)) > delai_term))
             {
               top3=time(NULL);
               system("clear && printf '\e[3J'");
