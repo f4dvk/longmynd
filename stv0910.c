@@ -54,9 +54,9 @@ uint8_t stv0910_read_car_freq(uint8_t demod, int32_t *cf) {
     /* first off we read in the carrier offset as a signed number */
                            err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ?
                                             RSTV0910_P2_CFR2 : RSTV0910_P1_CFR2, &val_h); /* high byte*/
-    if (err==ERROR_NONE) err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ?
+    if (err==ERROR_NONE) err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ? 
                                             RSTV0910_P2_CFR1 : RSTV0910_P1_CFR1, &val_m); /* mid */
-    if (err==ERROR_NONE) err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ?
+    if (err==ERROR_NONE) err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ? 
                                             RSTV0910_P2_CFR0 : RSTV0910_P1_CFR0, &val_l); /* low */
     /* since this is a 24 bit signed value, we need to build it as a 24 bit value, shift it up to the top
        to get a 32 bit signed value, then convert it to a double */
@@ -100,7 +100,12 @@ uint8_t stv0910_read_sr(uint8_t demod, uint32_t *found_sr) {
 /* -------------------------------------------------------------------------------------------------- */
     double sr;
     uint8_t val_h, val_mu, val_ml, val_l;
+    uint8_t tempc ;
+    int32_t temp = 0;
+    double tempf ;
     uint8_t err;
+
+    // Read the basic symbol rate
 
                          err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ? RSTV0910_P2_SFR3 : RSTV0910_P1_SFR3, &val_h);  /* high byte */
     if (err==ERROR_NONE) err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ? RSTV0910_P2_SFR2 : RSTV0910_P1_SFR2, &val_mu); /* mid upper */
@@ -112,7 +117,22 @@ uint8_t stv0910_read_sr(uint8_t demod, uint32_t *found_sr) {
        ((uint32_t)val_l       );
     /* sr (MHz) = ckadc (MHz) * SFR/2^32. So in Symbols per Second we need */
     sr=135000000*sr/256.0/256.0/256.0/256.0;
-    *found_sr=(uint32_t)sr;
+
+    // read the symbol rate detection offset (Copied from WinterHill)
+
+    if (err == ERROR_NONE) err = stv0910_read_reg(demod==STV0910_DEMOD_TOP ? RSTV0910_P2_TMGREG2 : RSTV0910_P1_TMGREG2, &tempc);
+    temp |= tempc << 24 ;
+    if (err == ERROR_NONE) err = stv0910_read_reg(demod==STV0910_DEMOD_TOP ? RSTV0910_P2_TMGREG1 : RSTV0910_P1_TMGREG1, &tempc);
+    temp |= tempc << 16 ;
+    if (err == ERROR_NONE) err = stv0910_read_reg(demod==STV0910_DEMOD_TOP ? RSTV0910_P2_TMGREG0 : RSTV0910_P1_TMGREG0, &tempc);
+    temp |= tempc << 8 ;
+
+    temp = temp / 256 ;                                             // move to the bottom 24 bits 
+                                                                    // and extend the sign
+    tempf = temp ;                                                  // convert to double
+    tempf = tempf * 1000 / (1 << 29) ;                              // calculate offset in symbols
+    tempf = tempf * sr / 1000 ;                                     // multiply by nominal symbol rate
+    *found_sr = (int32_t) (sr + tempf) ;                            // update the value
 
     if (err!=ERROR_NONE) printf("ERROR: STV0910 read symbol rate\n");
 
@@ -143,6 +163,48 @@ uint8_t stv0910_read_puncture_rate(uint8_t demod, uint8_t *rate) {
     }
 
     if (err!=ERROR_NONE) printf("ERROR: STV0910 read puncture rate\n");
+
+    return err;
+}
+
+
+/* -------------------------------------------------------------------------------------------------- */
+uint8_t stv0910_read_agc1_gain(uint8_t demod, uint16_t *agc) {
+/* -------------------------------------------------------------------------------------------------- */
+/* reads the AGC1 Gain registers in the Demodulator and returns the results                           */
+/*  demod: STV0910_DEMOD_TOP | STV0910_DEMOD_BOTTOM: which demodulator is being read                  */
+/* agc: place to store the results                                                                    */
+/* return: error state                                                                                */
+/* -------------------------------------------------------------------------------------------------- */
+    uint8_t err;
+    uint8_t agc_low, agc_high;
+
+                         err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ? RSTV0910_P2_AGCIQIN0 : RSTV0910_P1_AGCIQIN0, &agc_low);
+    if (err==ERROR_NONE) err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ? RSTV0910_P2_AGCIQIN1 : RSTV0910_P1_AGCIQIN1, &agc_high);
+    if (err==ERROR_NONE) *agc = (uint16_t)agc_high << 8 | (uint16_t)agc_low;
+
+    if (err!=ERROR_NONE) printf("ERROR: STV0910 read agc1 gain\n");
+
+    return err;
+}
+
+
+/* -------------------------------------------------------------------------------------------------- */
+uint8_t stv0910_read_agc2_gain(uint8_t demod, uint16_t *agc) {
+/* -------------------------------------------------------------------------------------------------- */
+/* reads the AGC2 Gain registers in the Demodulator and returns the results                           */
+/*  demod: STV0910_DEMOD_TOP | STV0910_DEMOD_BOTTOM: which demodulator is being read                  */
+/* agc: place to store the results                                                                    */
+/* return: error state                                                                                */
+/* -------------------------------------------------------------------------------------------------- */
+    uint8_t err;
+    uint8_t agc_low, agc_high;
+
+                         err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ? RSTV0910_P2_AGC2I0 : RSTV0910_P1_AGC2I0, &agc_low);
+    if (err==ERROR_NONE) err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ? RSTV0910_P2_AGC2I1 : RSTV0910_P1_AGC2I1, &agc_high);
+    if (err==ERROR_NONE) *agc = (uint16_t)agc_high << 8 | (uint16_t)agc_low;
+
+    if (err!=ERROR_NONE) printf("ERROR: STV0910 read agc2 gain\n");
 
     return err;
 }
@@ -226,7 +288,7 @@ uint8_t stv0910_read_ber(uint8_t demod, uint32_t *ber) {
 }
 
 /* -------------------------------------------------------------------------------------------------- */
-uint8_t stv0910_read_mer(uint8_t demod, uint32_t *mer) {
+uint8_t stv0910_read_mer(uint8_t demod, int32_t *mer) {
 /* -------------------------------------------------------------------------------------------------- */
 /*    demod: STV0910_DEMOD_TOP | STV0910_DEMOD_BOTTOM: which demodulator is being read                */
 /*      mer: place to store the result                                                                */
@@ -241,7 +303,16 @@ uint8_t stv0910_read_mer(uint8_t demod, uint32_t *mer) {
     if(((high >> 2) & 0x01) == 1)
     {
         /* Px_NOSRAM_CNRVAL is valid */
-        *mer = ((high & 0x03) << 8) | low;
+        if(((high >> 1) & 0x01) == 1)
+        {
+            /* Negative */
+            *mer = (((high & 0x01) << 8) | low) - 512;
+        }
+        else
+        {
+            *mer = ((high & 0x01) << 8) | low;
+        }
+        
     }
     else
     {
@@ -339,7 +410,7 @@ uint8_t stv0910_read_modcod_and_type(uint8_t demod, uint32_t *modcod, bool *shor
 /* -------------------------------------------------------------------------------------------------- */
     uint8_t err;
     uint8_t regval;
-
+    
     err=stv0910_read_reg(demod==STV0910_DEMOD_TOP ? RSTV0910_P2_DMDMODCOD : RSTV0910_P1_DMDMODCOD, &regval);
 
     *modcod = (regval & 0x7c) >> 2;
@@ -536,25 +607,25 @@ uint8_t stv0910_setup_timing_loop(uint8_t demod, uint32_t sr) {
 /* -------------------------------------------------------------------------------------------------- */
 uint8_t stv0910_setup_ts(uint8_t demod) {
 /* -------------------------------------------------------------------------------------------------- */
-/* format with or without sync and header bytes TSINSDELH                                             */
-/*   output rate manual or auto adjust                                                                */
-/*   control with TSCFX                                                                               */
-/*   serial or paralled TSCFGH.PxTSFIFO_SERIAL (serial is on D7) 2 control bits                       */
-/*   configure bus to low impedance (high Z on reset) OUTCFG                                          */
-/*   DPN (data valid/parity negated) is high when FEC is outputting data                              */
-/*      low when redundant data is out[ut eq parity data or rate regulation stuffing bits)            */
-/*   Data is regulated by CLKOUT and DPN: either data valid or envelope.                              */
-/*     data valid uses continuous clock and select valid data using DPN                               */
-/*     envelope: DPN still indicates valid data and then punctured clock for rate regulation          */
-/*     TSCFGH.TSFIFO_DVBCI=1 for data and 0 for envelope.                                             */
-/*   CLKOUT polarity bit XOR, OUTCFG2.TS/2_CLKOUT_XOR=0 valid rising (=1 for falling).                */
+/* format with or without sync and header bytes TSINSDELH                                             */ 
+/*   output rate manual or auto adjust                                                                */ 
+/*   control with TSCFX                                                                               */ 
+/*   serial or paralled TSCFGH.PxTSFIFO_SERIAL (serial is on D7) 2 control bits                       */ 
+/*   configure bus to low impedance (high Z on reset) OUTCFG                                          */ 
+/*   DPN (data valid/parity negated) is high when FEC is outputting data                              */ 
+/*      low when redundant data is out[ut eq parity data or rate regulation stuffing bits)            */ 
+/*   Data is regulated by CLKOUT and DPN: either data valid or envelope.                              */ 
+/*     data valid uses continuous clock and select valid data using DPN                               */ 
+/*     envelope: DPN still indicates valid data and then punctured clock for rate regulation          */ 
+/*     TSCFGH.TSFIFO_DVBCI=1 for data and 0 for envelope.                                             */ 
+/*   CLKOUT polarity bit XOR, OUTCFG2.TS/2_CLKOUT_XOR=0 valid rising (=1 for falling).                */ 
 /*   TSFIFOMANSPEED controlls data rate (padding). 0x11 manual, 0b00 fully auto. speed is TSSPEE      */
-/*     if need square clock, TSCFGH.TSFIFO_DUTY50.                                                    */
-/*   parallel mode is ST back end. CLKOUT held (TSCFGH.TSINFO_DBCI) for unknown data section          */
-/*     or DVB-CI: DRN is help (CLKOUTnCFG.CLKOUT_XOR) for unknown data section                        */
-/*   in both STRUT is high for first byte of packet                                                   */
-/*   rate compensation is TSCFGH.TSFIFO_DVBCI                                                         */
-/*                                                                                                    */
+/*     if need square clock, TSCFGH.TSFIFO_DUTY50.                                                    */ 
+/*   parallel mode is ST back end. CLKOUT held (TSCFGH.TSINFO_DBCI) for unknown data section          */ 
+/*     or DVB-CI: DRN is help (CLKOUTnCFG.CLKOUT_XOR) for unknown data section                        */ 
+/*   in both STRUT is high for first byte of packet                                                   */ 
+/*   rate compensation is TSCFGH.TSFIFO_DVBCI                                                         */ 
+/*                                                                                                    */ 
 /*   All of this is set in the register init.                                                         */
 /*   demod: STV0910_DEMOD_TOP | STV0910_DEMOD_BOTTOM: which demodulator is being read                 */
 /*  return: error state                                                                               */
@@ -567,7 +638,7 @@ uint8_t stv0910_setup_ts(uint8_t demod) {
 }
 
 /* -------------------------------------------------------------------------------------------------- */
-uint8_t stv0910_start_scan(uint8_t demod) {
+uint8_t stv0910_start_scan(uint8_t demod, uint8_t aep) {
 /* -------------------------------------------------------------------------------------------------- */
 /* demodulator search sequence is:                                                                    */
 /*   setup the timing loop                                                                            */
@@ -587,8 +658,9 @@ uint8_t stv0910_start_scan(uint8_t demod) {
 
     printf("Flow: STV0910 start scan\n");
 
-    if (err==ERROR_NONE) err=stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_DMDISTATE : RSTV0910_P1_DMDISTATE),
-                                                                                   STV0910_SCAN_BLIND_BEST_GUESS);
+    if (err==ERROR_NONE) err=stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_DMDISTATE : RSTV0910_P1_DMDISTATE), aep);
+
+//                                                                                   STV0910_SCAN_BLIND_BEST_GUESS);
 
     if (err!=ERROR_NONE) printf("ERROR: STV0910 start scan\n");
 
@@ -604,7 +676,7 @@ uint8_t stv0910_read_scan_state(uint8_t demod, uint8_t *state) {
 /* -------------------------------------------------------------------------------------------------- */
     uint8_t err=ERROR_NONE;
 
-    if (err==ERROR_NONE) err=stv0910_read_reg_field((demod==STV0910_DEMOD_TOP ?
+    if (err==ERROR_NONE) err=stv0910_read_reg_field((demod==STV0910_DEMOD_TOP ? 
                                   FSTV0910_P2_HEADER_MODE : FSTV0910_P1_HEADER_MODE), state);
 
     if (err!=ERROR_NONE) printf("ERROR: STV0910 read scan state\n");
@@ -693,3 +765,4 @@ uint8_t stv0910_init(uint32_t sr1, uint32_t sr2, uint32_t freq) {
 
     return err;
 }
+

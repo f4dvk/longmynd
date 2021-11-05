@@ -1,5 +1,5 @@
 BIN = longmynd
-SRC = main.c nim.c ftdi.c stv0910.c stv0910_utils.c stvvglna.c stvvglna_utils.c stv6120.c stv6120_utils.c ftdi_usb.c fifo.c udp.c beep.c ts.c
+SRC = main.c nim.c ftdi.c stv0910.c stv0910_utils.c stvvglna.c stvvglna_utils.c stv6120.c stv6120_utils.c ftdi_usb.c fifo.c udp.c beep.c ts.c libts.c
 OBJ = ${SRC:.c=.o}
 
 ifndef CC
@@ -28,7 +28,7 @@ COPT += -funsafe-math-optimizations
 CFLAGS += -Wall -Wextra -Wpedantic -Wunused -DVERSION=\"${VER}\" -pthread -D_GNU_SOURCE
 LDFLAGS += -lusb-1.0 -lm -lasound
 
-all: _print_banner ${BIN} fake_read infos full_rx
+all: _print_banner ${BIN} fake_read infos full_rx ts_analyse
 
 debug: COPT = -Og
 debug: CFLAGS += -ggdb -fno-omit-frame-pointer
@@ -40,17 +40,21 @@ werror: all
 _print_banner:
 	@echo "Compiling longmynd with GCC $(shell $(CC) -dumpfullversion) on $(shell $(CC) -dumpmachine)"
 
-fake_read:
+fake_read: fake_read.c
 	@echo "  CC     "$@
 	@${CC} fake_read.c -o $@
 
-infos:
+infos: infos.c
 	@echo "  CC     "$@
 	@${CC} infos.c -o $@
 
-full_rx:
+full_rx: full_rx.c
 	@echo "  CC     "$@
 	@${CC} full_rx.c -o $@
+
+ts_analyse: ts_analyse.c libts.o
+	@echo "  CC     "$@
+	@${CC} ts_analyse.c libts.o -o $@
 
 $(BIN): ${OBJ}
 	@echo "  LD     "$@

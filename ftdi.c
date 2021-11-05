@@ -250,7 +250,7 @@ int ftdi_i2c_read_byte_send_nak(uint8_t *b ) {
     out_buffer[num_bytes_to_send++] = 0x13;
     out_buffer[num_bytes_to_send++] = 0x80;
     out_buffer[num_bytes_to_send++] = 0x00;
-    out_buffer[num_bytes_to_send++] = 0x11;
+    out_buffer[num_bytes_to_send++] = 0x11; 
     out_buffer[num_bytes_to_send++] = 0x25;
     out_buffer[num_bytes_to_send++] = 0x00;
     out_buffer[num_bytes_to_send++] = 0x00;
@@ -437,7 +437,7 @@ uint8_t ftdi_i2c_write_reg8(uint8_t addr, uint8_t reg, uint8_t val) {
 /* -------------------------------------------------------------------------------------------------- */
 uint8_t ftdi_gpio_write(uint8_t pin_id, bool pin_value)
 /* -------------------------------------------------------------------------------------------------- */
-/* write pin_value to the FTDI GPIO pin AC<pin_id>                                                                    */
+/* write pin_value to the FTDI GPIO pin AC<pin_id>                                                    */
 /* -------------------------------------------------------------------------------------------------- */
 {
     printf("Flow: FTDI GPIO Write: pin %d -> value %d\n", pin_id, (int)pin_value);
@@ -520,8 +520,9 @@ uint8_t ftdi_init(uint8_t usb_bus, uint8_t usb_addr) {
     if (err==ERROR_NONE) err=ftdi_usb_set_mpsse_mode_ts();
     if (err==ERROR_NONE) err=ftdi_setup_ftdi_io();
     if (err==ERROR_NONE) err=ftdi_nim_reset();
-
+    
     if (err!=ERROR_NONE) printf("ERROR: FTDI init\n");
 
     return err;
 }
+
