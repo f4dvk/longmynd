@@ -60,9 +60,8 @@
 #define STATUS_ERRORS_BCH_UNCORRECTED   23
 #define STATUS_LNB_SUPPLY         24
 #define STATUS_LNB_POLARISATION_H 25
-
-#define STATUS_AGC1_GAIN          35
-#define STATUS_AGC2_GAIN          37
+#define STATUS_AGC1_GAIN          26
+#define STATUS_AGC2_GAIN          27
 
 /* The number of constellation peeks we do for each background loop */
 #define NUM_CONSTELLATIONS 16
@@ -72,6 +71,7 @@
 typedef struct {
     bool port_swap;
     uint8_t port;
+    float halfscan_ratio;
     uint8_t freq_index;
     uint8_t sr_index;
     uint32_t freq_requested[4];
@@ -95,9 +95,6 @@ typedef struct {
 
     bool polarisation_supply;
     bool polarisation_horizontal; // false -> 13V, true -> 18V
-
-    uint8_t device_BB_Gain;
-    uint32_t device_Scan_Limit;
 
     int ts_timeout;
 

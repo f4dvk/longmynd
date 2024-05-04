@@ -250,7 +250,7 @@ uint8_t stv6120_set_freq(uint8_t tuner, uint32_t freq) {
 }
 
 /* -------------------------------------------------------------------------------------------------- */
-uint8_t stv6120_init(uint32_t freq_tuner_1, uint32_t freq_tuner_2, bool swap, uint8_t bb_gain) {
+uint8_t stv6120_init(uint32_t freq_tuner_1, uint32_t freq_tuner_2, bool swap) {
 /* -------------------------------------------------------------------------------------------------- */
 /* Initialises the tuner. Both tuners can be set up.                                                  */
 /*   freq_tuner_1:  0: disable tuner 1                                                                */
@@ -263,9 +263,6 @@ uint8_t stv6120_init(uint32_t freq_tuner_1, uint32_t freq_tuner_2, bool swap, ui
 /* -------------------------------------------------------------------------------------------------- */
     uint8_t err=ERROR_NONE;
     uint8_t k;
-
-    uint8_t gain_bb = 0x0;
-    gain_bb = gain_bb + bb_gain;
 
     printf("Flow: Tuner init\n");
 
@@ -291,14 +288,14 @@ uint8_t stv6120_init(uint32_t freq_tuner_1, uint32_t freq_tuner_2, bool swap, ui
                              (STV6120_CTRL2_SDOFF_OFF        << STV6120_CTRL2_SDOFF_SHIFT)     |
                              (STV6120_CTRL2_SYN_ON           << STV6120_CTRL2_SYN_SHIFT)       |
                              (STV6120_CTRL2_REFOUTSEL_1_25V  << STV6120_CTRL2_REFOUTSEL_SHIFT) |
-                             (gain_bb                        << STV6120_CTRL2_BBGAIN_SHIFT)    );
+                             (STV6120_CTRL2_BBGAIN_0DB       << STV6120_CTRL2_BBGAIN_SHIFT)    ); 
 
         /* CTRL3,4,5,6 are all tuner 1 PLL regs we will set them later */
 
         /* turn off rcclk for now */
         if (err==ERROR_NONE) {
             ctrl7 = (STV6120_CTRL7_RCCLKOFF_DISABLE << STV6120_CTRL7_RCCLKOFF_SHIFT) |
-                    (STV6120_CTRL7_CF_5MHZ          << STV6120_CTRL7_CF_SHIFT)       ;
+                    (STV6120_CTRL7_CF_5MHZ          << STV6120_CTRL7_CF_SHIFT)       ; 
             err=stv6120_write_reg(STV6120_CTRL7, ctrl7);
         }
 
@@ -322,8 +319,8 @@ uint8_t stv6120_init(uint32_t freq_tuner_1, uint32_t freq_tuner_2, bool swap, ui
 
     /* we need to set tcal for both tuners, but we need to remember the state in case we are using tuner 1 later */
     if (err==ERROR_NONE) {
-        ctrl8 = (STV6120_CTRL8_TCAL_DIV_2    << STV6120_CTRL8_TCAL_SHIFT) |
-                (STV6120_CTRL8_CALTIME_500US << STV6120_CTRL8_TCAL_SHIFT) ;
+        ctrl8 = (STV6120_CTRL8_TCAL_DIV_2    << STV6120_CTRL8_TCAL_SHIFT) | 
+                (STV6120_CTRL8_CALTIME_500US << STV6120_CTRL8_TCAL_SHIFT) ; 
         err=stv6120_write_reg(STV6120_CTRL8, ctrl8);
     }
 
@@ -362,12 +359,12 @@ uint8_t stv6120_init(uint32_t freq_tuner_1, uint32_t freq_tuner_2, bool swap, ui
 
     /* Configure path 2 */
     if (freq_tuner_2>0) { /* we are go on tuner 2 so turn it on */
-        if (err==ERROR_NONE) err=stv6120_write_reg(STV6120_CTRL11,
+        if (err==ERROR_NONE) err=stv6120_write_reg(STV6120_CTRL11, 
                              (STV6120_CTRL2_DCLOOPOFF_ENABLE << STV6120_CTRL2_DCLOOPOFF_SHIFT) |
                              (STV6120_CTRL2_SDOFF_OFF        << STV6120_CTRL2_SDOFF_SHIFT)     |
                              (STV6120_CTRL2_SYN_ON           << STV6120_CTRL2_SYN_SHIFT)       |
                              (STV6120_CTRL2_REFOUTSEL_1_25V  << STV6120_CTRL2_REFOUTSEL_SHIFT) |
-                             (gain_bb                        << STV6120_CTRL2_BBGAIN_SHIFT)    );
+                             (STV6120_CTRL2_BBGAIN_6DB       << STV6120_CTRL2_BBGAIN_SHIFT)    );
 
         /* CTRL12, 13, 14, 15 are PLL for tuner 2 */
 
@@ -397,7 +394,7 @@ uint8_t stv6120_init(uint32_t freq_tuner_1, uint32_t freq_tuner_2, bool swap, ui
 
     /* there is no tcal field in CTRL17 but we still need to remember the state in case we are using tuner 2 later */
     if (err==ERROR_NONE) {
-        ctrl17 = (STV6120_CTRL8_CALTIME_500US << STV6120_CTRL8_TCAL_SHIFT);
+        ctrl17 = (STV6120_CTRL8_CALTIME_500US << STV6120_CTRL8_TCAL_SHIFT); 
         err=stv6120_write_reg(STV6120_CTRL17, ctrl8);
     }
 

@@ -224,6 +224,7 @@ uint8_t process_command_line(int argc, char *argv[], longmynd_config_t *config) 
 
     /* Defaults */
     config->port_swap = false;
+    config->halfscan_ratio = 1.5;
     config->beep_enabled = false;
     config->device_usb_addr = 0;
     config->device_usb_bus = 0;
@@ -234,8 +235,6 @@ uint8_t process_command_line(int argc, char *argv[], longmynd_config_t *config) 
     config->polarisation_supply=false;
     char polarisation_str[8];
     config->ts_timeout = 5*1000;
-    config->device_BB_Gain = 0;
-    config->device_Scan_Limit = 50;
     config->search_algorithm = 21; // 0x15
 
     param=1;
@@ -275,18 +274,15 @@ uint8_t process_command_line(int argc, char *argv[], longmynd_config_t *config) 
                 config->port_swap=true;
                 param--; /* there is no data for this so go back */
                 break;
+            case 'S':
+                config->halfscan_ratio=strtof(argv[param],NULL);
+                break;
             case 'b':
                 config->beep_enabled=true;
                 param--; /* there is no data for this so go back */
                 break;
             case 'r':
                 config->ts_timeout=strtol(argv[param],NULL,10);
-                break;
-            case 'g':
-                config->device_BB_Gain=(uint8_t)strtol(argv[param],NULL,10);
-                break;
-            case 'S':
-                config->device_Scan_Limit=(uint32_t)strtol(argv[param],NULL,10);
                 break;
             case 'A':
                 config->search_algorithm =(uint8_t)strtol(argv[param++],NULL,10);
@@ -296,26 +292,18 @@ uint8_t process_command_line(int argc, char *argv[], longmynd_config_t *config) 
         param++;
     }
 
-    if (err==ERROR_NONE) {
-        if (config->device_BB_Gain>8) {
-            config->device_BB_Gain=8;
-        }
-    }
-
-    if (err==ERROR_NONE) {
-        if (config->device_Scan_Limit>4000) {
-            config->device_Scan_Limit=4000;
-        }
-        if ( config->device_Scan_Limit%2 != 0){
-           config->device_Scan_Limit=config->device_Scan_Limit+1;
-           printf("Correction Scan Limit, pair uniquement, valeur: %i\n",config->device_Scan_Limit);
-        }
-        config->device_Scan_Limit=config->device_Scan_Limit/2;
-    }
-
     if ((argc-param)<2) {
         err=ERROR_ARGS_INPUT;
         printf("ERROR: Main Frequency and Main Symbol Rate not found.\n");
+    }
+
+    if (err==ERROR_NONE) {
+        /* Check Scanwidth */
+        if(config->halfscan_ratio < 0.0 || config->halfscan_ratio > 100.0)
+        {
+            err=ERROR_ARGS_INPUT;
+            printf("ERROR: Scan width not valid.\n");
+        }
     }
 
     if (err==ERROR_NONE) {
@@ -536,7 +524,7 @@ uint8_t do_report(longmynd_status_t *status) {
             err=stv0910_read_constellation(STV0910_DEMOD_TOP, &status->constellation[count][0], &status->constellation[count][1]);
         }
     }
-
+    
     /* puncture rate */
     if (err==ERROR_NONE) err=stv0910_read_puncture_rate(STV0910_DEMOD_TOP, &status->puncture_rate);
 
@@ -630,10 +618,10 @@ void *loop_i2c(void *arg) {
                 /* init all the modules */
                 if (*err==ERROR_NONE) *err=nim_init();
                 /* we are only using the one demodulator so set the other to 0 to turn it off */
-                if (*err==ERROR_NONE) *err=stv0910_init(config_cpy.sr_requested[config_cpy.sr_index],0,config_cpy.device_Scan_Limit);
+                if (*err==ERROR_NONE) *err=stv0910_init(config_cpy.sr_requested[config_cpy.sr_index],0,config_cpy.halfscan_ratio,0.0);
                 /* we only use one of the tuners in STV6120 so freq for tuner 2=0 to turn it off */
-                if (*err==ERROR_NONE) tuner_err=stv6120_init(config_cpy.freq_requested[config_cpy.freq_index],0,config_cpy.port_swap,config_cpy.device_BB_Gain);
-
+                if (*err==ERROR_NONE) tuner_err=stv6120_init(config_cpy.freq_requested[config_cpy.freq_index],0,config_cpy.port_swap);
+                
                 /* Tuner Lock timeout on some NIMs - Print message and pause, do..while() handles the retry logic */
                 if (*err==ERROR_NONE && tuner_err==ERROR_TUNER_LOCK_TIMEOUT)
                 {

@@ -35,6 +35,8 @@
 #include "errors.h"
 #include "stv0910_regs_init.h"
 
+uint8_t stv0910_serialTS = 0;
+
 /* -------------------------------------------------------------------------------------------------- */
 /* ----------------- ROUTINES ----------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------------------------------- */
@@ -509,7 +511,7 @@ uint8_t stv0910_setup_equalisers(uint8_t demod) {
 
 
 /* -------------------------------------------------------------------------------------------------- */
-uint8_t stv0910_setup_carrier_loop(uint8_t demod, uint32_t freq) {
+uint8_t stv0910_setup_carrier_loop(uint8_t demod, uint32_t halfscan_sr) {
 /* -------------------------------------------------------------------------------------------------- */
 /* 3 stages:                                                                                          */
 /*   course:                                                                                          */
@@ -531,23 +533,31 @@ uint8_t stv0910_setup_carrier_loop(uint8_t demod, uint32_t freq) {
 /*  return: error code                                                                                */
 /* -------------------------------------------------------------------------------------------------- */
     uint8_t err;
+    int64_t temp;
 
     printf("Flow: Setup carrier loop %i\n", demod);
-
-    //stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CARFREQ : RSTV0910_P1_CARFREQ), 0x79);
-
-    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRUP0 : RSTV0910_P1_CFRUP0), (freq & 0xFF));
-    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRUP1 : RSTV0910_P1_CFRUP1), (freq >> 8) & 0xFF);
-
-    freq = -freq;
-
-    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRLOW0 : RSTV0910_P1_CFRLOW0), (freq & 0xFF));
-    stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRLOW1 : RSTV0910_P1_CFRLOW1), (freq >> 8) & 0xFF);
 
     /* start at 0 offset */
                          err=stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRINIT0 : RSTV0910_P1_CFRINIT0), 0);
     if (err==ERROR_NONE) err=stv0910_write_reg((demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRINIT1 : RSTV0910_P1_CFRINIT1), 0);
 
+    // 0.6 * SR seems to give +/- 0.5 SR lock
+    temp = halfscan_sr * 65536 / 135000;
+
+    // Upper Limit
+    if (err==ERROR_NONE)
+    {
+        err = stv0910_write_reg( (demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRUP0 : RSTV0910_P1_CFRUP0), (uint8_t) (temp & 0xff));
+        err = stv0910_write_reg( (demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRUP1 : RSTV0910_P1_CFRUP1), (uint8_t) ((temp >> 8) & 0xff));
+    }
+    // the lower value is the negative of the upper value
+    temp = -temp;
+    if (err==ERROR_NONE)
+    {
+        err = stv0910_write_reg( (demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRLOW0 : RSTV0910_P1_CFRLOW0), (uint8_t) (temp & 0xff));
+        err = stv0910_write_reg( (demod==STV0910_DEMOD_TOP ? RSTV0910_P2_CFRLOW1 : RSTV0910_P1_CFRLOW1), (uint8_t) ((temp >> 8) & 0xff));
+    }
+ 
     return err;
 }
 
@@ -662,6 +672,7 @@ uint8_t stv0910_start_scan(uint8_t demod, uint8_t aep) {
 
 //                                                                                   STV0910_SCAN_BLIND_BEST_GUESS);
 
+
     if (err!=ERROR_NONE) printf("ERROR: STV0910 start scan\n");
 
     return err;
@@ -709,8 +720,17 @@ uint8_t stv0910_init_regs() {
     /* next we initialise all the registers in the list */
     do {
         if (err==ERROR_NONE) err=stv0910_write_reg(STV0910DefVal[i].reg, STV0910DefVal[i].val);
-    }
+    }        
     while (STV0910DefVal[i++].reg!=RSTV0910_TSTTSRS);
+
+    // if we are using the BATC Pico interface then we may need serial TS data
+    // the default register setting is for Parallel.
+
+    if(stv0910_serialTS)
+    {
+           if (err==ERROR_NONE) err = stv0910_write_reg(RSTV0910_P1_TSCFGH, 0x40);
+           if (err==ERROR_NONE) err = stv0910_write_reg(RSTV0910_P2_TSCFGH, 0x40);
+    }
 
     /* finally (from ST example code) reset the LDPC decoder */
     if (err==ERROR_NONE) err=stv0910_write_reg(RSTV0910_TSTRES0, 0x80);
@@ -720,7 +740,7 @@ uint8_t stv0910_init_regs() {
 }
 
 /* -------------------------------------------------------------------------------------------------- */
-uint8_t stv0910_init(uint32_t sr1, uint32_t sr2, uint32_t freq) {
+uint8_t stv0910_init(uint32_t sr1, uint32_t sr2, float halfscan_ratio1, float halfscan_ratio2) {
 /* -------------------------------------------------------------------------------------------------- */
 /* demodulator search sequence is:                                                                    */
 /*   setup the carrier loop                                                                           */
@@ -751,13 +771,13 @@ uint8_t stv0910_init(uint32_t sr1, uint32_t sr2, uint32_t freq) {
     /* now we do the inits for each specific demodulator */
     if (sr1!=0) {
         if (err==ERROR_NONE) err=stv0910_setup_equalisers(STV0910_DEMOD_TOP);
-        if (err==ERROR_NONE) err=stv0910_setup_carrier_loop(STV0910_DEMOD_TOP, freq);
+        if (err==ERROR_NONE) err=stv0910_setup_carrier_loop(STV0910_DEMOD_TOP, sr1 * halfscan_ratio1);
         if (err==ERROR_NONE) err=stv0910_setup_timing_loop(STV0910_DEMOD_TOP, sr1);
     }
 
     if (sr2!=0) {
         if (err==ERROR_NONE) err=stv0910_setup_equalisers(STV0910_DEMOD_BOTTOM);
-        if (err==ERROR_NONE) err=stv0910_setup_carrier_loop(STV0910_DEMOD_BOTTOM, freq);
+        if (err==ERROR_NONE) err=stv0910_setup_carrier_loop(STV0910_DEMOD_BOTTOM, sr2 * halfscan_ratio2);
         if (err==ERROR_NONE) err=stv0910_setup_timing_loop(STV0910_DEMOD_BOTTOM, sr2);
     }
 
